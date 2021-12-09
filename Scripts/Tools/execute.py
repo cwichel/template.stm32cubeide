@@ -1,10 +1,10 @@
 #!/usr/bin/python
 # -*- coding: ascii -*-
 """
-Execution tool.
+Pure built-in based virtual environment activator and executor.
 
 - Activates, if possible, the project's virtual environment.
-- Executed the desired command.
+- Execute the desired command.
 
 :date:      2021
 :author:    cwichel
@@ -29,7 +29,7 @@ ROOT = pl.Path(os.path.dirname(__file__)).parent.parent
 
 
 # -->> API <<--------------------------
-def _venv_search() -> tp.Optional[pl.Path]:
+def search() -> tp.Optional[pl.Path]:
     """
     Search and returns the project environment's path.
 
@@ -40,32 +40,18 @@ def _venv_search() -> tp.Optional[pl.Path]:
     return find.pop().parent.parent if find else None
 
 
-def _venv_activate_script(path: pl.Path) -> None:
+def activate(venv: pl.Path) -> None:
     """
-    Activates the virtual environment using the provided script.
+    Activates the given virtual environment on the current run.
 
-    :param pl.Path path: Path to the activation script.
-
-    """
-    # Executes the script in the current process
-    with path.open(mode="r", encoding="utf-8") as file:
-        code = compile(file.read(), path, "exec")
-        exec(code, dict(__file__=path))
-
-
-def _venv_activate_manual(path: pl.Path) -> None:
-    """
-    Activates the environment manually.
-
-    :param pl.Path path: Path to the virtual environment folder.
-
+    :param pl.Path venv:        Path to virtualenv folder.
     """
     # Get environment paths
-    bins = path / "Scripts"
-    libs = path / "Libs/site-packages"
+    bins = venv / "Scripts"
+    libs = venv / "Libs/site-packages"
 
     # Register environment
-    os.environ["VIRTUAL_ENV"] = f"{path}"
+    os.environ["VIRTUAL_ENV"] = f"{venv}"
 
     # Add binaries to path
     os.environ["PATH"] = f"{bins}{os.pathsep}{os.environ['PATH']}"
@@ -76,25 +62,8 @@ def _venv_activate_manual(path: pl.Path) -> None:
     sys.path = sys.path[idx:] + sys.path[0:idx]
 
     # Update system prefix
-    sys.real_prefix = sys.prefix
-    sys.prefix = f"{path}"
-
-
-def venv_activate() -> None:
-    """
-    Activates the environment, if available.
-    """
-    # Get environment path
-    venv = _venv_search()
-    if venv is None:
-        return
-
-    # Activate
-    script = venv / "Scripts/activate_this.py"
-    if script.exists() and script.is_file():
-        _venv_activate_script(path=script)
-    else:
-        _venv_activate_manual(path=venv)
+    sys.old_prefix = sys.prefix
+    sys.prefix = f"{venv}"
 
     # Verify
     active = pl.Path(sys.prefix)
@@ -106,8 +75,9 @@ def execute() -> None:
     """
     Tries to activate the project virtual environment and execute the provided command.
     """
-    cmd = " ".join(sys.argv[1:])
-    venv_activate()
+    cmd  = " ".join(sys.argv[1:])
+    venv = search()
+    activate(venv=venv)
     print(
         f"Executing..."
         f"\nEnv: {sys.prefix}"
