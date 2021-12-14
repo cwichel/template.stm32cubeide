@@ -75,16 +75,16 @@ def execute() -> None:
     """
     Tries to activate the project virtual environment and execute the provided command.
     """
-    cmd  = " ".join(sys.argv[1:])
-    venv = search()
-    activate(venv=venv)
+    activate(venv=search())
+    cmd = f"python {' '.join(sys.argv[1:])}"
     print(
         f"Executing..."
         f"\nEnv: {sys.prefix}"
         f"\nCwd: {os.getcwd()}"
-        f"\nCmd: {cmd}"
+        f"\nCmd: {cmd}\n"
         )
-    sp.call(f"{cmd}", cwd=os.getcwd(), shell=True)
+    sys.stdout.flush()
+    sp.call(cmd, cwd=os.getcwd(), shell=True)
 
 
 # -->> Execute <<----------------------
